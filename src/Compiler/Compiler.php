@@ -174,6 +174,13 @@ class Compiler
                 $code = 'return ' . $this->compileValue($value) . ';';
                 break;
             case $definition instanceof Reference:
+                if ($definition->isServiceLocatorEntry()) {
+                    $requestingEntry = $definition->getRequestingName();
+                    $serviceLocatorDefinition = $definition->getServiceLocatorDefinition();
+                    $code = 'return $this->resolveServiceLocator(' . $this->compileValue($requestingEntry) . ', ' . $this->compileValue($serviceLocatorDefinition::$serviceLocatorRepositoryClass) . ');';
+                    break;
+                }
+
                 $targetEntryName = $definition->getTargetEntryName();
                 $code = 'return $this->delegateContainer->get(' . $this->compileValue($targetEntryName) . ');';
                 // If this method is not yet compiled we store it for compilation
