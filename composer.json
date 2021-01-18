@@ -31,7 +31,7 @@
         "php": ">=7.2.0",
         "psr/container": "^1.0",
         "php-di/invoker": "^2.0",
-        "php-di/phpdoc-reader": "^2.0.1",
+        "php-di/phpdoc-reader": "^2.0.1,<2.2.0",
         "jeremeamia/superclosure": "^2.0",
         "nikic/php-parser": "^2.0|^3.0|^4.0"
     },
