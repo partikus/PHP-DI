@@ -40,7 +40,7 @@ class Reference implements Definition, SelfResolvingDefinition
     private $isServiceLocatorEntry;
 
     /**
-     * @var ServiceLocatorDefinition
+     * @var ServiceLocatorDefinition|null
      */
     private $serviceLocatorDefinition;
 
