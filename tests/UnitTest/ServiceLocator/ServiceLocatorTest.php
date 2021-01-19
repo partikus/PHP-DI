@@ -33,12 +33,11 @@ class ServiceLocatorTest extends TestCase
         $this->assertEquals('test', $serviceLocator->getSubscriber());
     }
 
-    /**
-     * @expectedException \DI\NotFoundException
-     * @expectedExceptionMessage Service 'something' is not defined.
-     */
     public function testServiceNotDefined()
     {
+        $this->expectException(\DI\NotFoundException::class);
+        $this->expectExceptionMessage('Service \'something\' is not defined.');
+
         $container = ContainerBuilder::buildDevContainer();
         $serviceLocator = new ServiceLocator($container, [], 'test');
         $serviceLocator->get('something');

@@ -33,12 +33,11 @@ class ServiceLocatorRepositoryTest extends TestCase
         $this->assertEquals($expectedServices, $serviceLocator->getServices());
     }
 
-    /**
-     * @expectedException \DI\NotFoundException
-     * @expectedExceptionMessage Service locator for entry 'something' is not initialized.
-     */
     public function testServiceLocatorNotCreated()
     {
+        $this->expectException(\DI\NotFoundException::class);
+        $this->expectExceptionMessage('Service locator for entry \'something\' is not initialized.');
+
         $container = ContainerBuilder::buildDevContainer();
         $repository = new ServiceLocatorRepository($container);
         $repository->get('something');
@@ -94,12 +93,11 @@ class ServiceLocatorRepositoryTest extends TestCase
         $this->assertSame($locator3, $locator5);
     }
 
-    /**
-     * @expectedException \LogicException
-     * @expectedExceptionMessage ServiceLocator for 'test' cannot be recreated with different services.
-     */
     public function testCannotCreateMultipleWithDifferentServices()
     {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('ServiceLocator for \'test\' cannot be recreated with different services.');
+
         $container = ContainerBuilder::buildDevContainer();
         $repository = new ServiceLocatorRepository($container);
 

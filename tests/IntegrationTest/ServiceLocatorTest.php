@@ -32,11 +32,12 @@ class ServiceLocatorTest extends BaseContainerTest
 
     /**
      * @dataProvider provideContainer
-     * @expectedException \DI\NotFoundException
-     * @expectedExceptionMessage Service 'baz' is not defined.
      */
     public function testServiceLocatorThrowsForInvalidService(ContainerBuilder $builder)
     {
+        $this->expectException(\DI\NotFoundException::class);
+        $this->expectExceptionMessage('Service \'baz\' is not defined.');
+
         $builder->addDefinitions([
             'baz' => 'baz',
         ]);
@@ -99,11 +100,12 @@ class ServiceLocatorTest extends BaseContainerTest
 
     /**
      * @dataProvider provideContainer
-     * @expectedException \LogicException
-     * @expectedExceptionMessage Service 'foo' for 'DI\Test\IntegrationTest\ServiceLocatorTest\ServiceSubscriber' cannot be overridden - ServiceLocator is already created.
      */
     public function testCannotOverrideServiceForAlreadyInstantiatedSubscriber(ContainerBuilder $builder)
     {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Service \'foo\' for \'DI\Test\IntegrationTest\ServiceLocatorTest\ServiceSubscriber\' cannot be overridden - ServiceLocator is already created.');
+
         $container = $builder->build();
 
         $container->get(ServiceLocatorTest\ServiceSubscriber::class);
