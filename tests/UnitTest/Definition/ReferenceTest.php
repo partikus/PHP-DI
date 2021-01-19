@@ -102,22 +102,22 @@ class ReferenceTest extends TestCase
 
     /**
      * @test
-     * @expectedException \DI\Definition\Exception\InvalidDefinition
-     * @expectedExceptionMessage Invalid service locator definition ('bar' for 'foo')
      */
     public function should_throw_on_invalid_service_locator_entry()
     {
+        $this->expectException(\DI\Definition\Exception\InvalidDefinition::class);
+        $this->expectExceptionMessage('Invalid service locator definition (\'bar\' for \'foo\')');
         $definition = new Reference('bar', 'foo');
         $definition->getServiceLocatorDefinition();
     }
 
     /**
      * @test
-     * @expectedException \DI\Definition\Exception\InvalidDefinition
-     * @expectedExceptionMessage Invalid service locator definition ('DI\ServiceLocator' for '')
      */
     public function should_throw_on_invalid_service_locator_entry2()
     {
+        $this->expectException(\DI\Definition\Exception\InvalidDefinition::class);
+        $this->expectExceptionMessage('Invalid service locator definition (\'DI\ServiceLocator\' for \'\')');
         $definition = new Reference(Reference::$serviceLocatorClass);
         $definition->getServiceLocatorDefinition();
     }

@@ -33,11 +33,12 @@ class ServiceLocatorDefinitionTest extends TestCase
 
     /**
      * @test
-     * @expectedException \DI\ServiceSubscriberException
-     * @expectedExceptionMessage The class DI\Test\UnitTest\Fixtures\Singleton does not implement ServiceSubscriberInterface.
      */
     public function cannot_resolve_without_proper_subscriber()
     {
+        $this->expectException(\DI\ServiceSubscriberException::class);
+        $this->expectExceptionMessage('The class DI\Test\UnitTest\Fixtures\Singleton does not implement ServiceSubscriberInterface.');
+
         $container = $this->easyMock(ContainerInterface::class);
         $definition = new ServiceLocatorDefinition(ServiceLocator::class, Singleton::class);
 
