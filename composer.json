@@ -1,7 +1,8 @@
 {
-    "name": "ovos/php-di",
+    "name": "partikus/php-di",
     "replace": {
-        "php-di/php-di": "^6.0.8"
+        "php-di/php-di": "^6.0.8",
+        "ovos/php-di": "^6.0"
     },
     "type": "library",
     "description": "The dependency injection container for humans",
