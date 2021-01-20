@@ -8,6 +8,7 @@ use DI\Compiler\Compiler;
 use DI\Definition\Source\AnnotationBasedAutowiring;
 use DI\Definition\Source\DefinitionArray;
 use DI\Definition\Source\DefinitionFile;
+use DI\Definition\Source\DefinitionGlob;
 use DI\Definition\Source\DefinitionSource;
 use DI\Definition\Source\NoAutowiring;
 use DI\Definition\Source\ReflectionBasedAutowiring;
@@ -55,6 +56,11 @@ class ContainerBuilder
      * @var bool
      */
     private $useAnnotations = false;
+
+    /**
+     * @var int
+     */
+    private $annotationsFlags = 0;
 
     /**
      * @var bool
@@ -131,7 +137,7 @@ class ContainerBuilder
         $sources = array_reverse($this->definitionSources);
 
         if ($this->useAnnotations) {
-            $autowiring = new AnnotationBasedAutowiring($this->ignorePhpDocErrors);
+            $autowiring = new AnnotationBasedAutowiring($this->ignorePhpDocErrors, $this->annotationsFlags);
             $sources[] = $autowiring;
         } elseif ($this->useAutowiring) {
             $autowiring = new ReflectionBasedAutowiring;
@@ -146,6 +152,8 @@ class ContainerBuilder
                 return new DefinitionFile($definitions, $autowiring);
             } elseif (is_array($definitions)) {
                 return new DefinitionArray($definitions, $autowiring);
+            } elseif ($definitions instanceof DefinitionGlob) {
+                $definitions->setAutowiring($autowiring);
             }
 
             return $definitions;
@@ -155,10 +163,8 @@ class ContainerBuilder
         // Mutable definition source
         $source->setMutableDefinitionSource(new DefinitionArray([], $autowiring));
 
-        if ($this->sourceCache) {
-            if (!SourceCache::isSupported()) {
-                throw new \Exception('APCu is not enabled, PHP-DI cannot use it as a cache');
-            }
+        // use cache if isSupported check passes, otherwise proceed without cache and do not throw an exception
+        if ($this->sourceCache && SourceCache::isSupported()) {
             // Wrap the source with the cache decorator
             $source = new SourceCache($source, $this->sourceCacheNamespace);
         }
@@ -244,11 +250,12 @@ class ContainerBuilder
      *
      * @return $this
      */
-    public function useAnnotations(bool $bool) : self
+    public function useAnnotations(bool $bool, int $flags = 0) : self
     {
         $this->ensureNotLocked();
 
         $this->useAnnotations = $bool;
+        $this->annotationsFlags = $flags;
 
         return $this;
     }

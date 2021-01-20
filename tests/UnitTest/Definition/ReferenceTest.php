@@ -72,4 +72,53 @@ class ReferenceTest extends TestCase
     {
         $this->assertEquals('get(bar)', (string) new Reference('bar'));
     }
+
+    /**
+     * @test
+     */
+    public function should_have_a_requesting_name()
+    {
+        $definition = new Reference('bar', 'foo');
+        $this->assertEquals('foo', $definition->getRequestingName());
+    }
+
+    /**
+     * @test
+     */
+    public function should_be_a_service_locator_entry()
+    {
+        $definition = new Reference(Reference::$serviceLocatorClass, 'foo');
+        $this->assertTrue($definition->isServiceLocatorEntry());
+    }
+
+    /**
+     * @test
+     */
+    public function should_not_be_a_service_locator_entry()
+    {
+        $definition = new Reference('bar', 'foo');
+        $this->assertFalse($definition->isServiceLocatorEntry());
+    }
+
+    /**
+     * @test
+     */
+    public function should_throw_on_invalid_service_locator_entry()
+    {
+        $this->expectException(\DI\Definition\Exception\InvalidDefinition::class);
+        $this->expectExceptionMessage('Invalid service locator definition (\'bar\' for \'foo\')');
+        $definition = new Reference('bar', 'foo');
+        $definition->getServiceLocatorDefinition();
+    }
+
+    /**
+     * @test
+     */
+    public function should_throw_on_invalid_service_locator_entry2()
+    {
+        $this->expectException(\DI\Definition\Exception\InvalidDefinition::class);
+        $this->expectExceptionMessage('Invalid service locator definition (\'DI\ServiceLocator\' for \'\')');
+        $definition = new Reference(Reference::$serviceLocatorClass);
+        $definition->getServiceLocatorDefinition();
+    }
 }
