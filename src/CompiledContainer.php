@@ -16,6 +16,7 @@ use Invoker\ParameterResolver\AssociativeArrayResolver;
 use Invoker\ParameterResolver\DefaultValueResolver;
 use Invoker\ParameterResolver\NumericArrayResolver;
 use Invoker\ParameterResolver\ResolverChain;
+use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Compiled version of the dependency injection container.
@@ -119,5 +120,43 @@ abstract class CompiledContainer extends Container
         } catch (NotEnoughParametersException $e) {
             throw new InvalidDefinition("Entry \"$entryName\" cannot be resolved: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Resolve a placeholder in string definition
+     * - wrap possible NotFound exception to conform to the one from StringDefinition::resolveExpression.
+     */
+    protected function resolveStringPlaceholder($placeholder, $entryName)
+    {
+        try {
+            return $this->delegateContainer->get($placeholder);
+        } catch (NotFoundExceptionInterface $e) {
+            throw new DependencyException(sprintf(
+                "Error while parsing string expression for entry '%s': %s",
+                $entryName,
+                $e->getMessage()
+            ), 0, $e);
+        }
+    }
+
+    /**
+     * Resolve ServiceLocator for given subscriber class (based on \DI\Definition\ServiceLocatorDefinition::resolve).
+     *
+     * @param string $requestingName class name of a subscriber, implementing ServiceSubscriberInterface
+     * @param string $repositoryClass ServiceLocatorRepository
+     * @return ServiceLocator
+     * @throws ServiceSubscriberException
+     */
+    protected function resolveServiceLocator($requestingName, $repositoryClass)
+    {
+        if (!method_exists($requestingName, 'getSubscribedServices')) {
+            throw new ServiceSubscriberException(sprintf('The class %s does not implement ServiceSubscriberInterface.', $requestingName));
+        }
+
+        /** @var ServiceLocatorRepository $repository */
+        $repository = $this->delegateContainer->get($repositoryClass);
+        $services = $requestingName::getSubscribedServices();
+
+        return $repository->create($requestingName, $services);
     }
 }

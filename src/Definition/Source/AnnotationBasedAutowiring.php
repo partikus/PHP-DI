@@ -6,6 +6,7 @@ namespace DI\Definition\Source;
 
 use DI\Annotation\Inject;
 use DI\Annotation\Injectable;
+use DI\Definition\AutowireDefinition;
 use DI\Definition\Exception\InvalidAnnotation;
 use DI\Definition\ObjectDefinition;
 use DI\Definition\ObjectDefinition\MethodInjection;
@@ -33,6 +34,25 @@ use UnexpectedValueException;
  */
 class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
 {
+    // Annotations configuration flags:
+    // enable on implicit definitions
+    const IMPLICIT = 1;
+    // enable on all autowire definitions (which are written in DI config) by default
+    const EXPLICIT = 2;
+    // read @Injectable annotations for classes
+    const INJECTABLE = 4;
+    // read @Inject annotations for properties
+    const PROPERTIES = 8;
+    // read @Inject annotations for methods' parameters
+    const METHODS = 16;
+    // all options enabled
+    const ALL = 31;
+
+    /**
+     * @var int
+     */
+    private $flags;
+
     /**
      * @var Reader
      */
@@ -48,9 +68,10 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
      */
     private $ignorePhpDocErrors;
 
-    public function __construct($ignorePhpDocErrors = false)
+    public function __construct($ignorePhpDocErrors = false, int $flags = 0)
     {
         $this->ignorePhpDocErrors = (bool) $ignorePhpDocErrors;
+        $this->flags = $flags > 0 ? $flags : self::ALL; // all flags turned on by default
     }
 
     public function autowire(string $name, ObjectDefinition $definition = null)
@@ -62,16 +83,35 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
         }
 
         $definition = $definition ?: new ObjectDefinition($name);
+        $useAnnotations = $definition instanceof AutowireDefinition
+            ? ($definition->isUsingAnnotations() ?? ($this->flags & self::EXPLICIT))
+            : ($this->flags & self::IMPLICIT);
 
-        $class = new ReflectionClass($className);
+        $class = null;
+        if ($useAnnotations && $this->flags >= self::INJECTABLE) {
+            $class = new ReflectionClass($className);
 
-        $this->readInjectableAnnotation($class, $definition);
+            if ($this->flags & self::INJECTABLE) {
+                $this->readInjectableAnnotation($class, $definition);
+            }
 
-        // Browse the class properties looking for annotated properties
-        $this->readProperties($class, $definition);
+            // Browse the class properties looking for annotated properties
+            if ($this->flags & self::PROPERTIES) {
+                $this->readProperties($class, $definition);
+            }
 
-        // Browse the object's methods looking for annotated methods
-        $this->readMethods($class, $definition);
+            // Browse the object's methods looking for annotated methods
+            if ($this->flags & self::METHODS) {
+                $this->readMethods($class, $definition);
+            }
+        }
+
+        // constructor parameters should always be read, even if annotations are disabled (completely or i.a. for methods)
+        // so that it behaves at least as ReflectionBasedAutowiring
+        if (!$useAnnotations || !($this->flags & self::METHODS)) {
+            $class = $class ?? new ReflectionClass($className);
+            $this->readConstructor($class, $definition);
+        }
 
         return $definition;
     }
@@ -147,7 +187,7 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
         }
 
         $definition->addPropertyInjection(
-            new PropertyInjection($property->getName(), new Reference($entryName), $classname)
+            new PropertyInjection($property->getName(), new Reference($entryName, $classname), $classname)
         );
     }
 
@@ -174,6 +214,28 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
                 $objectDefinition->completeFirstMethodInjection($methodInjection);
             }
         }
+    }
+
+    /**
+     * Browse the object's constructor parameters and inject dependencies.
+     */
+    private function readConstructor(ReflectionClass $class, ObjectDefinition $definition)
+    {
+        if (!($constructor = $class->getConstructor()) || !$constructor->isPublic()) {
+            return;
+        }
+
+        $parameters = [];
+        foreach ($constructor->getParameters() as $index => $parameter) {
+            $entryName = $this->getMethodParameter($index, $parameter, []);
+
+            if ($entryName !== null) {
+                $parameters[$index] = new Reference($entryName, $class->getName());
+            }
+        }
+
+        $constructorInjection = MethodInjection::constructor($parameters);
+        $definition->completeConstructorInjection($constructorInjection);
     }
 
     /**

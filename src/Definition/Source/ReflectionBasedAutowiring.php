@@ -30,7 +30,7 @@ class ReflectionBasedAutowiring implements DefinitionSource, Autowiring
         $class = new \ReflectionClass($className);
         $constructor = $class->getConstructor();
         if ($constructor && $constructor->isPublic()) {
-            $constructorInjection = MethodInjection::constructor($this->getParametersDefinition($constructor));
+            $constructorInjection = MethodInjection::constructor($this->getParametersDefinition($constructor, $class->getName()));
             $definition->completeConstructorInjection($constructorInjection);
         }
 
@@ -53,7 +53,7 @@ class ReflectionBasedAutowiring implements DefinitionSource, Autowiring
     /**
      * Read the type-hinting from the parameters of the function.
      */
-    private function getParametersDefinition(\ReflectionFunctionAbstract $constructor) : array
+    private function getParametersDefinition(\ReflectionFunctionAbstract $constructor, string $className) : array
     {
         $parameters = [];
 
@@ -77,7 +77,10 @@ class ReflectionBasedAutowiring implements DefinitionSource, Autowiring
                 continue;
             }
 
-            $parameters[$index] = new Reference($parameterType->getName());
+            $parameters[$index] = new Reference(
+                $parameterType->getName(),
+                class_exists($parameterType->getName()) ? $className : null
+            );
         }
 
         return $parameters;
